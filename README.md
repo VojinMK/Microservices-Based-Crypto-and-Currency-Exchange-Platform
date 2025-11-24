@@ -1,143 +1,97 @@
-# Korisnici
+# Microservices-Based Crypto & Currency Exchange Platform
+
+This project is a microservices-based system for managing users, bank accounts, crypto wallets, currency exchange, crypto exchange and a unified trade flow, all routed through an API Gateway.  
+The application demonstrates role-based access control (**OWNER**, **ADMIN**, **USER**) and separation of responsibilities between services.
+
+The goal of the project is to show how a distributed system can be designed using Spring Boot microservices, with centralized authentication and authorization, and clear boundaries between business domains (users, bank accounts, crypto wallets, currency/crypto exchange, etc.).
+
+## Technologies Used
+
+- **Backend & Microservices**
+  - Java, Spring Boot  
+  - Spring Cloud Gateway  
+  - Spring Security (role-based access control)  
+  - OpenFeign (inter-service communication)  
+  - Eureka (service discovery)  
+  - Resilience4j (resilience patterns)  
+  - H2 Database (in-memory, for development)
+
+- **Infrastructure & Tools**
+  - Docker (containerization)  
+  - Docker Compose (orchestration)  
+  - Maven 
+
+---
+
+## Authentication & Test Users
+
+The system uses role-based access control. The following test users are available:
 
 **OWNER**  
-email: owner@gmail.com  
-password: 123456789
+- Email: `owner@gmail.com`  
+- Password: `123456789`  
 
 **ADMIN**  
-email: admin@gmail.com  
-password: 123456789
+- Email: `admin@gmail.com`  
+- Password: `123456789`  
 
 **USER**  
-email: user@gmail.com  
-password: 123456789
+- Email: `user@gmail.com`  
+- Password: `123456789`  
+
+Use these credentials when calling endpoints through the API Gateway.
 
 ---
 
-# BASE URL
-localhost:8765
+## Base URL (API Gateway)
+
+All main requests should go through the API Gateway:
+
+- **Base URL:** `http://localhost:8765`
+
+Some internal/debug endpoints are exposed directly on service ports (e.g. `8770`, `8200`, `8300`) and are not meant for regular users, but for testing and verification.
 
 ---
 
-# URL-ovi
+## API Overview
 
-## Users Service
+Below is an overview of the main endpoints and which roles can access them.
 
-- `GET: localhost:8770/users` — vraca sve korisnike — to pise da ne moze niko od korisnika i zasticeno je, jedini nacin je ovako da se pristupi ukoliko zatreba za provere nekih funckionalnosti  
-- `GET: localhost:8770/users/email?email=user@gmail.com` — ista prica i ovde
+---
 
-- `POST: localhost:8765/users/newAdmin` — kreira admina  
-- `POST: localhost:8765/users/newOwner` — kreira owner-a  
-- `POST: localhost:8765/users/newUser` — kreira usera  
+### Users Service
 
-**primer tela zahteva za kreiranje:**
+Base (gateway) URL: `http://localhost:8765/users`
+
+#### Internal / Debug (direct service access)
+
+- `GET: http://localhost:8770/users`  
+  Returns a list of all users.  
+  > Internal/debug endpoint, not accessible through the gateway for regular roles. Used only for manual checks and debugging.
+
+- `GET: http://localhost:8770/users/email?email=user@gmail.com`  
+  Returns a single user by email.  
+  > Internal/debug endpoint, used only for verification and testing.
+
+#### Create users (via API Gateway)
+
+- `POST: http://localhost:8765/users/newAdmin`  
+  Creates a new user with the **ADMIN** role.  
+  **Access:** OWNER
+
+- `POST: http://localhost:8765/users/newOwner`  
+  Creates a new user with the **OWNER** role.  
+  **Access:** OWNER
+
+- `POST: http://localhost:8765/users/newUser`  
+  Creates a new user with the **USER** role.  
+  **Access:** ADMIN, OWNER (depending on how you configured it; typically at least ADMIN)
+
+**Example request body (for creating any user):**
+
 ```json
 {
   "email": "user@gmail.com",
   "password": "123456789",
   "role": "user"
 }
-```
-
-- `PUT: localhost:8765/users/updateUser` — admin moze da azurira samo USERE dok owner moze sve  
-**primer tela zahteva:**
-```json
-{
-  "email": "user@gmail.com",
-  "password": "123456789",
-  "role": "user"
-}
-```
-
-- `DELETE: localhost:8765/users/removeUser?email=user1@gmail.com` — brisanje koriisnika ima pravo samo owner
-
----
-
-## Currency-Exchange
-- `GET: localhost:8765/currency-exchange?from=EUR&to=chf` — mogu sve uloge
-
----
-
-## Currency-Conversion
-- `GET: localhost:8765/currency-conversion?from=eur&to=rsd&quantity=10` — samo user moze
-
----
-
-## Bank-Account
-
-- `GET: localhost:8765/bank-accounts` — moze samo admin da pregleda sve racune  
-- `GET: localhost:8765/bank-accounts/email` — samo user, vraca njegov racun
-
-- `POST: localhost:8765/bank-accounts/create` — samo admin, kreiranje racuna  
-**primer tela zahteva:**
-```json
-{
-  "email": "user@gmail.com",
-  "rsdAmount": 0.00,
-  "eurAmount": 0.00,
-  "usdAmount": 0.00,
-  "chfAmount": 0.00,
-  "gbpAmount": 0.00
-}
-```
-
-- `PUT: localhost:8765/bank-accounts/update` — samo admin, azuriranje bankovnog racuna  
-**primer tela zahteva:**
-```json
-{
-  "email": "user@gmail.com",
-  "rsdAmount": 10.00,
-  "eurAmount": 100.00,
-  "usdAmount": 0.00,
-  "chfAmount": 100.00,
-  "gbpAmount": 0.00
-}
-```
-
-- `DELETE: localhost:8200/bank-accounts/remove?email=user@gmail.com` — ovo je u slucaju da zatreba, moze mu se samo ovako pristupiti. jer u specifikaciji se ne pominje da je bilo kojoj ulozi dozvoljeno brisanje
-
----
-
-## Crypto-exchange
-- `GET: localhost:8765/crypto-exchange?from=btc&to=ETH` — svi korisnici mogu da vide kurs razmene kripto valuta
-
----
-
-## Crypto-conversion
-- `GET: localhost:8765/crypto-conversion?from=btc&to=ltc&quantity=10` — mogu samo user-i
-
----
-
-## Crypto-wallet
-
-- `GET: localhost:8765/crypto-wallets` — vraca sve novcanike, moze samo admin  
-- `GET: localhost:8765/crypto-wallets/email` — vraca novcanik user-u, samo user moze da pristupi
-
-- `POST: localhost:8765/crypto-wallets/create` — kreiranje novcanika, moze samo admin  
-**primer tela zahteva:**
-```json
-{
-  "email": "user@gmail.com",
-  "btcAmount": 0.00,
-  "ethAmount": 0.00,
-  "ltcAmount": 0.00
-}
-```
-
-- `PUT: localhost:8765/crypto-wallets/update` — azuriranje novcanika, moze samo admin  
-**primer tela zahteva:**
-```json
-{
-  "email": "user@gmail.com",
-  "btcAmount": 11.00,
-  "ethAmount": 1.00,
-  "ltcAmount": 1.00
-}
-```
-
-- `DELETE: localhost:8300/crypto-wallets/remove?email=user1@gmail.com` — ovo je u slucaju da zatreba, moze mu se samo ovako pristupiti. jer u specifikaciji se ne pominje da je bilo kojoj ulozi dozvoljeno brisanje
-
----
-
-## Trade-service
-- `GET: localhost:8765/trade-service?from=eur&to=btc&quantity=1` — mogu mu pristupiti samo korisnici sa ulogom user
