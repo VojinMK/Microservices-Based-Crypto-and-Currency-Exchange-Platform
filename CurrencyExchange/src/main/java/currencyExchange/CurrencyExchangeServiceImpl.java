@@ -1,0 +1,62 @@
+package currencyExchange;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
+
+import api.dtos.CurrencyExchangeDto;
+import api.services.CurrencyExchangeService;
+import util.exceptions.CurrencyDoesntExistException;
+import util.exceptions.NoDataFoundException;
+
+@RestController
+public class CurrencyExchangeServiceImpl implements CurrencyExchangeService {
+
+	@Autowired
+	private CurrencyExchangeRepository repo;
+	
+	@Autowired
+	private Environment environment;
+
+	@Override
+	public ResponseEntity<?> getCurrencyExchange(String from, String to) {
+
+		String missingCurrency = null;
+		List<String> validCurrencies = repo.findAllDistinctCurrencies();
+		// da li from paramtera odgovara nekoj valuti
+		if (!isValidCurrency(from.toUpperCase()))
+			missingCurrency = from;
+		// da li to parametar odgovara nekoj valuti
+		else if (!isValidCurrency(to.toUpperCase()))
+			missingCurrency = to;
+		// provera da li je missing ralzicit od null, ako jeste bacanje domain
+		if (missingCurrency != null)
+			throw new CurrencyDoesntExistException(
+					String.format("Currency %s does not exist in the database", missingCurrency), validCurrencies);
+
+		CurrencyExchangeModel dbResponse = repo.findByFromAndTo(from.toUpperCase(), to.toUpperCase());
+
+		if (dbResponse == null) {
+			throw new NoDataFoundException(String.format("Request exchange rate ( %s to %s) does not exist.", from, to));
+		}
+
+		CurrencyExchangeDto dto = new CurrencyExchangeDto(dbResponse.getFrom().toUpperCase(), dbResponse.getTo().toUpperCase(),
+				dbResponse.getExchangeRate());
+		dto.setPort(environment.getProperty("local.server.port"));
+		return ResponseEntity.ok(dto);
+	}
+
+	public boolean isValidCurrency(String currency) {
+		List<String> currencies = repo.findAllDistinctCurrencies();
+		for (String s : currencies) {
+			if (s.equalsIgnoreCase(currency)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+}
