@@ -1,0 +1,35 @@
+# Maven build output
+**/target/
+
+# IDE files
+.idea/
+**/.idea/
+*.iml
+.vscode/
+**/.vscode/
+
+# Eclipse / STS
+**/.classpath
+**/.project
+**/.settings/
+**/.factorypath
+**/.apt_generated/
+**/.sts4-cache/
+
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+**/application-local.properties
+**/application-local.yml
+**/application-local.yaml
+
+# Logs
+*.log
+logs/
+**/logs/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
